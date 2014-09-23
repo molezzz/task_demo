@@ -1,6 +1,6 @@
 rails g scaffold Team key:string:uniq name:string
 rails g scaffold Project key:string:uniq title:string team:belongs_to
-rails g scaffold Todo key:string:uniq project:belongs_to creator_id:integer:index owner_id:integer:index content:text end_at:datetime complate_at:datetime
+rails g scaffold Todo key:string:uniq project:belongs_to creator_id:integer:index owner_id:integer:index content:text begin_at:datetime end_at:datetime complate_at:datetime
 rails g scaffold Event kind:string source_id:integer:index target:string target_id:integer data:text
 rails g scaffold  User key:string:uniq team:belongs_to name:string email:string:uniq avatar:text
 rails g scaffold Access user:belongs_to project:belongs_to

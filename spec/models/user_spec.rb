@@ -4,7 +4,7 @@ RSpec.describe User, :type => :model do
 
   describe "On Create" do
 
-    it 'must have name and email attributes' do
+    it 'name and email can not be blank' do
       user = User.new
 
       expect(user.valid?).to eq(false)

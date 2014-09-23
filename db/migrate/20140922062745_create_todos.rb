@@ -6,6 +6,7 @@ class CreateTodos < ActiveRecord::Migration
       t.integer :creator_id
       t.integer :owner_id
       t.text :content
+      t.datetime :begin_at
       t.datetime :end_at
       t.datetime :complate_at
 

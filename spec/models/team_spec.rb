@@ -1,5 +1,17 @@
 require 'rails_helper'
 
 RSpec.describe Team, :type => :model do
-  pending "add some examples to (or delete) #{__FILE__}"
+
+  describe "On Create" do
+
+    it 'name can not be blank' do
+      team = Team.new
+
+      expect(team.valid?).to eq(false)
+      expect(team.errors[:name]).to eq([I18n.t('errors.messages.blank')])
+
+    end
+
+  end
+
 end
