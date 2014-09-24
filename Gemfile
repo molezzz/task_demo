@@ -49,4 +49,5 @@ group :development, :test do
    gem 'pry'
    gem 'yard'
    gem 'factory_girl_rails'
+   gem 'database_cleaner'
 end

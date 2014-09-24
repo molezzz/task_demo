@@ -2,12 +2,11 @@
 
 FactoryGirl.define do
   factory :todo do
-    key "MyString"
     project nil
     creator_id 1
-    owner_id 1
-    content "MyText"
+    owner_id nil
+    content "todo test"
     end_at "2014-09-22 14:27:45"
-    complate_at "2014-09-22 14:27:45"
+    complate_at nil
   end
 end

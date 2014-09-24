@@ -11,7 +11,7 @@ module AutoKeygen
   end
 
   def gen_key
-    self.key = Digest::SHA1.hexdigest("#{self.class.name}-#{Time.now}")
+    self.key = Digest::SHA1.hexdigest("#{self.class.name}-#{Time.now}-#{self.object_id}")
   end
 
   module ClassMethods

@@ -2,9 +2,8 @@
 
 FactoryGirl.define do
   factory :comment do
-    key "MyString"
     user nil
     todo nil
-    content "MyText"
+    content "a test comment"
   end
 end
