@@ -89,12 +89,41 @@ module MonitorWithEvent
 
   module ClassMethods
 
+    
     def as_event_target
-      self.send :extend, BuilderClassMethod
+      self.send :extend, TargetClassMethod
       yield if block_given?
     end
 
-    module BuilderClassMethod
+    def as_event_source
+      self.send :include, SourceInstanceMethod
+    end
+
+    module SourceInstanceMethod
+      
+      def self.included(base)
+
+        # 定义关联
+        # @note 这里只是个简单的实现，实际上可以添加source字段配合source_id实现任何类作为event的发起者
+        base.send(:has_many, :events, foreign_key: 'source_id')
+
+      end
+
+      # 
+      # 调用该方法并在块内操作，以保证event可以被正确记录 
+      # @param target_object [ActiveRecord] 目标对象
+      # @param &block [Block]
+      # 
+      # @return [Object]
+      def will_change(target_object, &block)
+        target_object.event_source = self        
+        block.call(target_object)        
+      end
+
+    end
+
+
+    module TargetClassMethod
 
       def self.extended(base)
         Rails.logger.debug "extending by #{base}"

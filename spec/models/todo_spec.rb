@@ -117,6 +117,18 @@ RSpec.describe Todo, :type => :model do
       expect(event.kind).to eq('todo_asso_comments_add')
     end
 
+    it "should have a source when in `will_change` block" do
+      bill = FactoryGirl.create(:user_bill)
+      todo = FactoryGirl.create(:todo)
+
+      bill.will_change(todo) do |todo|        
+        todo.dispatch_to(bill)
+      end
+
+      event = todo.events.last      
+      expect(event.source_id).to eq(bill.id)
+    end
+
   end
 
 end
