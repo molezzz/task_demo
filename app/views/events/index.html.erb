@@ -14,40 +14,74 @@
     </h5>
   </div>
 
-  <div class="panel panel-default">
-    <div class="panel-heading">Panel heading</div>
-    <div class="panel-body">
-      <blockquote>
-        <ul class="media-list">
-          <li class="media">
-            <a class="pull-left" href="#">
-              <img class="media-object" data-src="holder.js/64x64" alt="64x64" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCI+PHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiBmaWxsPSIjZWVlIi8+PHRleHQgdGV4dC1hbmNob3I9Im1pZGRsZSIgeD0iMzIiIHk9IjMyIiBzdHlsZT0iZmlsbDojYWFhO2ZvbnQtd2VpZ2h0OmJvbGQ7Zm9udC1zaXplOjEycHg7Zm9udC1mYW1pbHk6QXJpYWwsSGVsdmV0aWNhLHNhbnMtc2VyaWY7ZG9taW5hbnQtYmFzZWxpbmU6Y2VudHJhbCI+NjR4NjQ8L3RleHQ+PC9zdmc+" style="width: 64px; height: 64px;">
-            </a>
-            <div class="media-body">
-              <h4 class="media-heading">Media heading</h4>
-              <p>Cras sit amet nibh libero, in gravida nulla. Nulla vel metus scelerisque ante sollicitudin commodo. Cras purus odio, vestibulum in vulputate at, tempus viverra turpis.</p>
-            </div>
-          </li>
-        </ul>
-      </blockquote>
+  <div class="panel panel-default" ng-repeat="(date, evtsInTime) in events">
+    <div class="panel-heading"><h5>{{date | dateFmt}}</h5></div>
+    <div class="panel-body">  
+           
+      <ul class="media-list" ng-repeat="(time, evts) in evtsInTime">
+        <li class="media" ng-repeat="(key, evt) in evts">
+          <div class="clearfix">
+            <blockquote style="width:100%" ng-show="evts[$index - 1].project_id != evt.project_id" class="pull-right">
+              <a href="/projects/{{projects[evt.project_id].key}}">{{projects[evt.project_id].title}}</a>
+            </blockquote>
+          </div>          
+          <a class="pull-left" href="/users/{{evt.user.key}}}">
+            <img class="media-object" data-src="holder.js/64x64" alt="64x64" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCI+PHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiBmaWxsPSIjZWVlIi8+PHRleHQgdGV4dC1hbmNob3I9Im1pZGRsZSIgeD0iMzIiIHk9IjMyIiBzdHlsZT0iZmlsbDojYWFhO2ZvbnQtd2VpZ2h0OmJvbGQ7Zm9udC1zaXplOjEycHg7Zm9udC1mYW1pbHk6QXJpYWwsSGVsdmV0aWNhLHNhbnMtc2VyaWY7ZG9taW5hbnQtYmFzZWxpbmU6Y2VudHJhbCI+NjR4NjQ8L3RleHQ+PC9zdmc+" style="width: 64px; height: 64px;">
+            <span>{{time}}</span>              
+          </a>
+          <div class="media-body">
+            <h4 class="media-heading"><a href="/users/{{evt.user.key}}">{{evt.user.name}}</span>:</a> {{evt.kind}}</h4>
+            <p>Cras sit amet nibh libero, in gravida nulla. Nulla vel metus scelerisque ante sollicitudin commodo. Cras purus odio, vestibulum in vulputate at, tempus viverra turpis.</p>
+          </div>
+        </li>
+      </ul>
+      
     </div>
   </div>
 </div>
 <script type="text/javascript">
 (function(){
 var teamMembers = <%=@team_members.to_json.html_safe%>;
+var projects = <%=@projects.to_json.html_safe%>;
 var app = angular.module('tower.events', [], angular.noop);
+app.filter('dateFmt', function(){
+  var map = {
+    '<%=Time.zone.now.strftime('%Y-%m-%d')%>': '今',
+    '<%=(Time.zone.now - 1.day).strftime('%Y-%m-%d')%>': '昨'
+  };  
+  return function(val){
 
+    return map[val] ? map[val] : val;
+  }
+});
 app.controller('EventsCtrl', ['$scope', '$http', function($scope, $http){
 
   $scope.teamMembers = teamMembers;
+  $scope.projects = projects;
   $scope.teamMembers.unshift({key: null, name: '所有成员'});
+  $scope.events = {};
 
   $scope.filter = {
     member: $scope.teamMembers[0]
   }
 
   $scope.$watch('filter',function(to, from){
+    var config = {
+      method: 'GET', 
+      url: '<%=events_path%>.json',
+      params: {} 
+    };
+    if(to.member && to.member.key){
+      config.params = { member: to.member.key}
+    }
+    $http(config).success(function(json, status, headers, config) {
+      $scope.events = json;
+      console.log(json);
+    })
+    .error(function(data, status, headers, config) {
+      alert(data);
+      console.log(data);
+    });
     console.log(to, from);
   }, true);
 

@@ -63,8 +63,8 @@ class UsersController < ApplicationController
 
   private
     # Use callbacks to share common setup or constraints between actions.
-    def set_user
-      @user = User.find(params[:id])
+    def set_user      
+      @user = params[:id] =~ /\A\d+\Z/ ? User.find(params[:id]) : User.where(key: params[:id]).first
     end
 
     # Never trust parameters from the scary internet, only allow the white list through.

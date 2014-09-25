@@ -64,7 +64,7 @@ class ProjectsController < ApplicationController
   private
     # Use callbacks to share common setup or constraints between actions.
     def set_project
-      @project = Project.find(params[:id])
+      @project = params[:id] =~ /\A\d+\Z/ ? Project.find(params[:id]) : Project.where(key: params[:id]).first
     end
 
     # Never trust parameters from the scary internet, only allow the white list through.
