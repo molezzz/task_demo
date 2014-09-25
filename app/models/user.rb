@@ -5,7 +5,8 @@ class User < ActiveRecord::Base
   has_many :projects, through: :accesses
   has_many :todos, foreign_key: 'owner_id'
   has_many :created_todos, class_name: 'Todo', foreign_key: 'creator_id'
-  
+  has_many :accesses
+
   has_many :comments
 
   validates :name, presence: true
@@ -27,5 +28,12 @@ class User < ActiveRecord::Base
                      }
 
   as_event_source
+
+
+
+  def team_brothers
+    self.class.where(team_id: self.team_id)
+  end
+
 
 end

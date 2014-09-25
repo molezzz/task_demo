@@ -1,10 +1,48 @@
 class EventsController < ApplicationController
+  include UserAuth
+
   before_action :set_event, only: [:show, :edit, :update, :destroy]
+
 
   # GET /events
   # GET /events.json
   def index
-    @events = Event.all
+    user = current_user
+
+    #获取用户有权访问的项目
+    @projects = user.projects.select(:id, :key, :title)
+
+    respond_to do |format|
+      format.html do
+        @team_members = user.team_brothers.select(:key,:name,:team_id)
+      end
+
+      format.json do
+        events = []
+        now = Time.zone.now + 10.day
+        today_range = now.beginning_of_day..now.end_of_day
+        yesterday_range = (now - 1.day).beginning_of_day..(now - 1.day).end_of_day
+
+
+        #进行两次查找，首先找是否有今天和昨天的，如果没有，则显示更早的
+        events = Event.select('events.*','todos.project_id')
+                      .joins(:todo)
+                      .where(todos: { project_id: @projects.collect{|p| p.id }})
+                      .where(created_at: yesterday_range.first..today_range.last)
+                      .order(created_at: :desc)
+
+
+        events = events.unscope(where: :created_at) if events.empty?
+        # @todo fix bug
+        p events
+
+        #对事件进行分组
+
+
+        render json: events.paginate(page: params[:page], per_page: 50)
+      end
+
+    end
   end
 
   # GET /events/1

@@ -42,6 +42,12 @@ RSpec.describe EventsController, :type => :controller do
       get :index, {}, valid_session
       expect(assigns(:events)).to eq([event])
     end
+
+    it "with JSON format" do
+      get :index, {}, valid_session, format: :json
+      expect(response.body).to eq(1)
+    end
+
   end
 
   describe "GET show" do

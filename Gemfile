@@ -40,6 +40,8 @@ gem 'spring',        group: :development
 
 gem 'rails-i18n', '~> 4.0.0'
 
+gem 'will_paginate'
+
 group :development, :test do
    gem 'spring-commands-rspec'
    gem 'rspec-rails'

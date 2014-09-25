@@ -15,6 +15,9 @@ class Todo < ActiveRecord::Base
     on :create do |cfg|
 
       cfg.title_tpl 'create a new todo'
+      cfg.default_source_id do |todo|
+        todo.creator_id
+      end
 
     end
 
@@ -42,6 +45,14 @@ class Todo < ActiveRecord::Base
       cfg.filter do |record, to, from|
         !to.nil? && !from.nil?
       end
+
+    end
+
+    #重新打开任务
+    on(attr: :complate_at, to: nil) do |cfg|
+
+      cfg.name 'reopen'
+      cfg.title_tpl 'reopen todo at {{to}}'
 
     end
 
@@ -81,6 +92,14 @@ class Todo < ActiveRecord::Base
 
     end
 
+    #开始执行一个任务
+    on(attr: :begin_at, from: nil) do |cfg|
+
+      cfg.name 'go'
+      cfg.title_tpl 'start {{self.name}}'
+
+    end
+
     #任务被销毁，实际上这个应该用不到
     on :destroy do |cfg|
 
@@ -117,6 +136,24 @@ class Todo < ActiveRecord::Base
   def dispatch_to(user, redispatch = false)
     return false if !user.is_a?(User) || (!owner_id.nil? && !redispatch)
     update_attribute(:owner_id, user.id)
+  end
+
+
+  #
+  # 开始执行一个任务
+  # @todo 讨论是否要限制只有任务的被派发者才能开始任务
+  #
+  # @return [Boolean]
+  def go
+    update_attribute(:begin_at, Time.now)
+  end
+
+  #
+  # 重新打开任务
+  #
+  # @return [Boolean]
+  def reopen
+    update_attribute(:complate_at, nil)
   end
 
   #

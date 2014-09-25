@@ -52,6 +52,19 @@ module MonitorWithEvent
 
 
     #
+    # 可以指定一个块来设置默认的source_id
+    # 当:event_source未被设置时，调用这个块获取source对象
+    # 一般用于对象被创建时
+    # block 接受一个参数 target 对象
+    # @todo 这个是否应该放在全局
+    #
+    # @return [type] [description]
+    def default_source_id(&block)
+      self[:default_source_id] = block
+    end
+
+
+    #
     # 依次检测filter列表并返回结果
     # filter可以接受三个参数
     #   record [ActiveRecord] 更新的对象
@@ -73,13 +86,17 @@ module MonitorWithEvent
     # 用于生成并保存Event
     # @param target [ActiveRecord]
     # @param kind [String]
+    # @param builder [EventBuilder]
     # @param data=nil [Hash] 要一并保存的其他数据
     #
     # @return [Boolean]
-    def event_create(target, kind, data=nil)
+    def event_create(target, kind, builder, data=nil)
+      source_id = target.event_source.try(:id)
+      source_id = builder[:default_source_id].call(target) if source_id.nil? && builder[:default_source_id].respond_to?(:call)
+
       Event.new({
         kind: kind,
-        source_id: target.event_source.try(:id),
+        source_id: source_id,
         target: target.class.name,
         target_id: target.id
       }).save!
@@ -89,7 +106,7 @@ module MonitorWithEvent
 
   module ClassMethods
 
-    
+
     def as_event_target
       self.send :extend, TargetClassMethod
       yield if block_given?
@@ -100,7 +117,7 @@ module MonitorWithEvent
     end
 
     module SourceInstanceMethod
-      
+
       def self.included(base)
 
         # 定义关联
@@ -109,15 +126,15 @@ module MonitorWithEvent
 
       end
 
-      # 
-      # 调用该方法并在块内操作，以保证event可以被正确记录 
+      #
+      # 调用该方法并在块内操作，以保证event可以被正确记录
       # @param target_object [ActiveRecord] 目标对象
       # @param &block [Block]
-      # 
+      #
       # @return [Object]
       def will_change(target_object, &block)
-        target_object.event_source = self        
-        block.call(target_object)        
+        target_object.event_source = self
+        block.call(target_object)
       end
 
     end
@@ -137,6 +154,9 @@ module MonitorWithEvent
         # @todo 自定义关联
         base.send :has_many, :events, -> { where(target: base.name)},
                              foreign_key: 'target_id', class_name: 'Event'
+
+        Event.send :belongs_to, :"#{base.name.downcase}", -> { where('events.target' => base.name)},
+                                foreign_key: 'target_id'
 
         base.singleton_class.instance_eval do
 
@@ -177,7 +197,7 @@ module MonitorWithEvent
           #NOTE 这里的self是被创建或修改的对象
           #如果设置了filter，调用filter并检查是否符合规则
           next if !builder.check_filters(self, nil, nil)
-          builder.event_create(self, kind)
+          builder.event_create(self, kind, builder)
         end
       end
 
@@ -205,7 +225,7 @@ module MonitorWithEvent
           #如果设置了filter，调用filter并检查是否符合规则
           from, to = self.send("#{op[:attr]}_change")
           next if !builder.check_filters(self, to, from)
-          builder.event_create(self, kind)
+          builder.event_create(self, kind, builder)
         end
       end
 
@@ -230,7 +250,7 @@ module MonitorWithEvent
           #NOTE record是被新建或删除的另一端对象
           #如果设置了filter，调用filter并检查是否符合规则
           next if !builder.check_filters(target, nil, nil)
-          builder.event_create(target, kind, {"#{record.class.name.downcase}" => record})
+          builder.event_create(target, kind, builder, {"#{record.class.name.downcase}" => record})
         end
         base.send(asso.macro, op[:asso], asso.options.merge(method => callback))
       end

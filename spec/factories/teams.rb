@@ -2,7 +2,6 @@
 
 FactoryGirl.define do
   factory :team do
-    key "MyString"
-    name "MyString"
+    name "Tower"
   end
 end
