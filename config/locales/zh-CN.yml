@@ -1,0 +1,19 @@
+zh-CN:
+  errors:
+    messages:
+      email: 'Email 格式不正确'
+      avatar: '只允许上传 .gif,.png,.jpg 和 .jpeg'
+  event:
+    todo:
+      create: 创建了新任务 -> {{self|link_to_todo}}
+      content: 修改了任务内容 -> {{self|link_to_todo}}
+      finished: 完成了任务 -> {{self|link_to_todo}}
+      fix_complate: 修改了任务的完成时间 -> {{self|link_to_todo}}
+      reopen: 重新开启了任务 -> {{self|link_to_todo}}
+      change_end: 修改了任务终止时间 -> {{self|link_to_todo}}
+      dispatch: 给{{to|link_to_user}}指派了任务 -> {{self|link_to_todo}}
+      redispatch: 将{{self|link_to_todo}}任务的由{{from|link_to_user}}转交给{{to|link_to_user}}
+      revoke: 取消了任务派发 -> {{self|link_to_todo}}
+      go: 开始执行任务 -> {{self|link_to_todo}}
+      destroy: 销毁了任务 -> {{self|link_to_todo}}
+      add_comment: 评论了任务 -> {{self|link_to_todo}}

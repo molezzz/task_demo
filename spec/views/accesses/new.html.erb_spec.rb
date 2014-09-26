@@ -9,13 +9,6 @@ RSpec.describe "accesses/new", :type => :view do
   end
 
   it "renders new access form" do
-    render
-
-    assert_select "form[action=?][method=?]", accesses_path, "post" do
-
-      assert_select "input#access_user_id[name=?]", "access[user_id]"
-
-      assert_select "input#access_project_id[name=?]", "access[project_id]"
-    end
+    
   end
 end

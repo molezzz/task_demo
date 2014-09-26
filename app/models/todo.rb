@@ -1,6 +1,5 @@
 class Todo < ActiveRecord::Base
-  include AutoKeygen
-  include Rails.application.routes.url_helpers
+  include AutoKeygen  
 
   belongs_to :project
   has_many :comments, dependent: :destroy
@@ -11,21 +10,33 @@ class Todo < ActiveRecord::Base
 
 
   as_event_target do
+    
+    hooks = {
+      link_to_user: ->(id){
+        user = User.find(id)
+        %{ <a href="/users/#{id}">#{user.name}</a> }
+      },
+      link_to_todo: ->(todo){                      
+        %{ <a href="/todos/#{todo.id}">#{todo.content}</a> }
+      }  
+    }
 
     #创建任务
     on :create do |cfg|
 
-      cfg.title_tpl 'create a new todo'
+      cfg.title_tpl I18n.t('event.todo.create')
       cfg.default_source_id do |todo|
         todo.creator_id
       end
+      cfg.hook :link_to_todo, hooks[:link_to_todo]
 
     end
 
     #修改任务
     on(attr: :content) do |cfg|
 
-      cfg.title_tpl 'change the todo content to {{to}}'
+      cfg.title_tpl I18n.t('event.todo.content')
+      cfg.hook :link_to_todo, hooks[:link_to_todo]
 
     end
 
@@ -33,7 +44,8 @@ class Todo < ActiveRecord::Base
     on(attr: :complate_at, from: nil) do |cfg|
 
       cfg.name 'finished'
-      cfg.title_tpl 'complate todo at {{to}}'
+      cfg.title_tpl I18n.t('event.todo.finished')
+      cfg.hook :link_to_todo, hooks[:link_to_todo]
 
     end
 
@@ -41,11 +53,12 @@ class Todo < ActiveRecord::Base
     on(attr: :complate_at) do |cfg|
 
       cfg.name 'fix_complate'
-      cfg.title_tpl 'change todo fininsed time from: {{from}} to: {{to}} '
+      cfg.title_tpl I18n.t('event.todo.fix_complate')
       #使用filter区分任务完成
       cfg.filter do |record, to, from|
         !to.nil? && !from.nil?
       end
+      cfg.hook :link_to_todo, hooks[:link_to_todo]
 
     end
 
@@ -53,14 +66,16 @@ class Todo < ActiveRecord::Base
     on(attr: :complate_at, to: nil) do |cfg|
 
       cfg.name 'reopen'
-      cfg.title_tpl 'reopen todo at {{to}}'
+      cfg.title_tpl I18n.t('event.todo.reopen')
+      cfg.hook :link_to_todo, hooks[:link_to_todo]
 
     end
 
     #修改任务结束时间
     on(attr: :end_at) do |cfg|
       cfg.name 'change_end'
-      cfg.title_tpl 'change deadline from:{{from}} to: {{to}}'
+      cfg.title_tpl I18n.t('event.todo.change_end')
+      cfg.hook :link_to_todo, hooks[:link_to_todo]
 
     end
 
@@ -68,7 +83,9 @@ class Todo < ActiveRecord::Base
     on(attr: :owner_id, from: nil) do |cfg|
 
       cfg.name 'dispatch'
-      cfg.title_tpl 'dispatch to {{to}}'
+      cfg.title_tpl I18n.t('event.todo.dispatch')
+      cfg.hook :link_to_user, hooks[:link_to_user]
+      cfg.hook :link_to_todo, hooks[:link_to_todo]
 
     end
 
@@ -76,12 +93,14 @@ class Todo < ActiveRecord::Base
     on(attr: :owner_id) do |cfg|
 
       cfg.name 'redispatch'
-      cfg.title_tpl 'redispatch from {{from}} to {{to}}'
+      cfg.title_tpl I18n.t('event.todo.redispatch')
       #在这里添加filter区分派发任务
       cfg.filter do |record, to, from|
         # 只有owner_id在两个用户之间发生变化时才收集
         !to.nil? && !from.nil?
       end
+      cfg.hook :link_to_user, hooks[:link_to_user]
+      cfg.hook :link_to_todo, hooks[:link_to_todo]
 
     end
 
@@ -89,7 +108,8 @@ class Todo < ActiveRecord::Base
     on(attr: :owner_id, to: nil) do |cfg|
 
       cfg.name 'revoke'
-      cfg.title_tpl 'todo revoked'
+      cfg.title_tpl I18n.t('event.todo.revoke')     
+      cfg.hook :link_to_todo, hooks[:link_to_todo]
 
     end
 
@@ -97,22 +117,25 @@ class Todo < ActiveRecord::Base
     on(attr: :begin_at, from: nil) do |cfg|
 
       cfg.name 'go'
-      cfg.title_tpl 'start {{self.name}}'
+      cfg.title_tpl I18n.t('event.todo.go')
+      cfg.hook :link_to_todo, hooks[:link_to_todo]
 
     end
 
     #任务被销毁，实际上这个应该用不到
     on :destroy do |cfg|
 
-      cfg.title_tpl 'destroy the todo'
+      cfg.title_tpl I18n.t('event.todo.destroy')
+      cfg.hook :link_to_todo, hooks[:link_to_todo]
 
     end
 
     #添加任务评论
     on(asso: :comments, to: :add) do |cfg|
 
-      cfg.title_tpl 'add comment to this todo'
+      cfg.title_tpl I18n.t('event.todo.add_comment')
       cfg.content_tpl '{{comment.content}}'
+      cfg.hook :link_to_todo, hooks[:link_to_todo]
 
     end
 

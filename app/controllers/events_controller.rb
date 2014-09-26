@@ -50,6 +50,8 @@ class EventsController < ApplicationController
                     name: event.source.name,
                     key: event.source.key
                   },
+                  title: event.title,
+                  content: event.content,
                   created_at: event.created_at,
                   project_id: event.project_id
                 }

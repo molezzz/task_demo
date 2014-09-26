@@ -1,4 +1,5 @@
 <div ng-controller="EventsCtrl">
+
   <div class="page-header">
     <h5>
       筛选动态：
@@ -30,20 +31,47 @@
             <span>{{time}}</span>              
           </a>
           <div class="media-body">
-            <h4 class="media-heading"><a href="/users/{{evt.user.key}}">{{evt.user.name}}</span>:</a> {{evt.kind}}</h4>
-            <p>Cras sit amet nibh libero, in gravida nulla. Nulla vel metus scelerisque ante sollicitudin commodo. Cras purus odio, vestibulum in vulputate at, tempus viverra turpis.</p>
+            <h6 class="media-heading">
+              <span class="glyphicon {{evt.kind|kindToIcon}}"></span>&nbsp;
+              <a href="/users/{{evt.user.key}}">{{evt.user.name}}</span>:</a> 
+              <span ng-bind-html="evt.title | htmlSafe"></span>
+            </h6>
+            <p ng-bind-html="evt.content | htmlSafe"></p>
           </div>
         </li>
       </ul>
       
     </div>
+    <div style="text-align: center;" pv-scrolled="nextPage()">
+      <a class="btn btn-success btn-lg" style="margin:1em auto;">{{loadLabel}}</a>
+    </div>    
   </div>
+
 </div>
 <script type="text/javascript">
 (function(){
 var teamMembers = <%=@team_members.to_json.html_safe%>;
 var projects = <%=@projects.to_json.html_safe%>;
+
 var app = angular.module('tower.events', [], angular.noop);
+app.directive('pvScrolled', function($window) {
+  return function(scope, elm, attr) {
+    var raw = elm[0];
+    var win = angular.element($window);
+
+    win.bind('scroll', function() {
+      // console.log({
+      //   '可视区高': $window.innerHeight, 
+      //   '卷动高度': $window.pageYOffset,
+      //   '元素距顶部距离': raw.offsetTop
+      // });
+      
+      if(raw.offsetTop - $window.pageYOffset  < $window.innerHeight){
+        scope.$apply(attr.pvScrolled);
+      };
+    });   
+  };
+});
 app.filter('dateFmt', function(){
   var map = {
     '<%=Time.zone.now.strftime('%Y-%m-%d')%>': '今',
@@ -54,29 +82,83 @@ app.filter('dateFmt', function(){
     return map[val] ? map[val] : val;
   }
 });
-app.controller('EventsCtrl', ['$scope', '$http', function($scope, $http){
+app.filter('htmlSafe', function($sce) {
+  return function(val) {
+      return $sce.trustAsHtml(val);
+  };
+});
+app.filter('kindToIcon', function() {
+  var map = {
+    'todo_asso_comments_add': 'glyphicon-pushpin',
+    'todo_attr_complate_at_changed_reopen': 'glyphicon-repeat',
+    'todo_attr_complate_at_changed_finished': 'glyphicon-flag',
+    'todo_attr_begin_at_changed_go': 'glyphicon-play',
+    'todo_attr_owner_id_changed_dispatch': 'glyphicon-hand-right'
+  };
+  return function(val) {
+      return map[val] ? map[val] : 'glyphicon-folder-open';
+  };
+});
+app.controller('EventsCtrl', ['$scope', '$http', '$sce', function($scope, $http, $sce){
 
   $scope.teamMembers = teamMembers;
   $scope.projects = projects;
   $scope.teamMembers.unshift({key: null, name: '所有成员'});
   $scope.events = {};
+  $scope.loadLabel = '更多动态加载中...';
+  $scope.onload = false;
 
   $scope.filter = {
-    member: $scope.teamMembers[0]
+    member: $scope.teamMembers[0],
+    page: 1
   }
+
+  $scope.nextPage = function(){
+    if($scope.noMore == true) return;
+    if($scope.onload) return;
+    $scope.filter.page++;
+  };
 
   $scope.$watch('filter',function(to, from){
     var config = {
       method: 'GET', 
       url: '<%=events_path%>.json',
-      params: {} 
+      params: {page: $scope.filter.page} 
     };
+    var isEmpty = function(obj) { 
+      for(var name in obj){ 
+        return false; 
+      } 
+      return true; 
+    }; 
     if(to.member && to.member.key){
-      config.params = { member: to.member.key}
+      config.params = { member: to.member.key }
     }
-    $http(config).success(function(json, status, headers, config) {
-      $scope.events = json;
-      console.log(json);
+    if($scope.noMore == true) return;
+    $scope.onload = true;
+    $http(config).success(function(json, status, headers, config) {      
+      if(isEmpty(json)){
+        $scope.loadLabel = '没有更多的动态了';
+        $scope.noMore = true;
+        return;
+      };      
+      angular.forEach(json, function(value, key){
+        console.log('1L', key, $scope.events[key]);        
+        if($scope.events[key]){
+          angular.forEach(value, function(v2, k2){
+            console.log('2L', k2, $scope.events[key][k2]);
+            if($scope.events[key][k2]){
+              $scope.events[key][k2] = $scope.events[key][k2].concat(v2);              
+            } else {
+              $scope.events[key][k2] = v2;
+            }
+          });          
+        } else {
+          $scope.events[key] = value;
+        }
+      });
+      console.log($scope.events);
+      $scope.onload = false;     
     })
     .error(function(data, status, headers, config) {
       alert(data);

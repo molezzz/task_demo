@@ -25,3 +25,5 @@ en:
     messages:
       email: 'only allows Email'
       avatar: 'extension must be .gif,.png,.jpg or .jpeg'
+
+

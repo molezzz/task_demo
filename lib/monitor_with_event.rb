@@ -53,12 +53,13 @@ module MonitorWithEvent
 
     #
     # 添加一个hook供编译模板时调用
-    # @param &block [Block]
+    # @param name [Symbol] hook的名字
+    # @param proc [Proc]
     #
     # @return [EventBuilder]
-    def hook(block)
-      self[:hooks] ||= []
-      self[:hooks].unshift block
+    def hook(name, proc)
+      self[:hooks] ||= {}
+      self[:hooks][name.to_s] = proc
     end
 
 
@@ -96,23 +97,73 @@ module MonitorWithEvent
     #
     # 用于生成并保存Event
     # @param target [ActiveRecord]
-    # @param kind [String]
-    # @param builder [EventBuilder]
-    # @param data=nil [Hash] 要一并保存的其他数据
+    # @param kind [String]    
+    # @param data={} [Hash] 要一并保存的其他数据
     #
     # @return [Boolean]
-    def event_create(target, kind, builder, data=nil)
+    def event_create(target, kind, data={})
       source_id = target.event_source.try(:id)
-      source_id = builder[:default_source_id].call(target) if source_id.nil? && builder[:default_source_id].respond_to?(:call)
+      source_id = self[:default_source_id].call(target) if source_id.nil? && self[:default_source_id].respond_to?(:call)
 
       Event.new({
         kind: kind,
         source_id: source_id,
         target: target.class.name,
         target_id: target.id,
-        data: data
+        data: data.update(self.compile(data))
       }).save!
     end
+
+    def compile(data)
+      result = { title: '', content: ''}      
+      config = self
+
+      hooks = {        
+        'datetime' => ->(time){
+          if time.respond_to? :strftime
+            time.strftime('%Y-%m-%d %H:%M:%S')
+          else
+            time
+          end
+        }
+      }
+
+      hooks.merge!(self[:hooks]) if self[:hooks]
+
+      #处理模板
+      
+      [:title, :content].each do |attr|
+        #从模板中提取'{{name|action}}'这种格式的变量        
+        result[attr] = self[:"#{attr}_tpl"].gsub(/{{([\s\S]+?)}}/) do |match|
+          name, hook = ($1).split('|').collect {|s| s.strip }
+          #处理 foo.bar 的形式
+          members = name.split('.')
+          key = members.shift
+          key = 'target_snap' if key == 'self'
+          key = key.to_sym
+          #检查数据中是否有相应的key          
+          if data.key?(key)
+            obj = data[key]            
+            #如果是成员操作，取出成员
+            if !members.blank?
+              members.each {|member| obj = obj.send(member) if obj.respond_to?(member) }
+            end
+
+            #检查是否有filter，有则执行
+            if hook && hooks.key?(hook)
+              obj = hooks[hook].call(obj)
+            end
+
+            obj
+
+          end 
+
+        end unless self[:"#{attr}_tpl"].nil?
+      end
+      
+      result
+
+    end #compile
 
   end
 
@@ -213,7 +264,7 @@ module MonitorWithEvent
           #NOTE 这里的self是被创建或修改的对象
           #如果设置了filter，调用filter并检查是否符合规则
           next if !builder.check_filters(self, nil, nil)
-          builder.event_create(self, kind, builder,{targe_snap: self.attributes})
+          builder.event_create(self, kind, {target_snap: self})
         end
       end
 
@@ -241,7 +292,7 @@ module MonitorWithEvent
           #如果设置了filter，调用filter并检查是否符合规则
           from, to = self.send("#{op[:attr]}_change")
           next if !builder.check_filters(self, to, from)
-          builder.event_create(self, kind, builder, {target_snap: self.attributes, attr: op[:attr], from: from, to: to})
+          builder.event_create(self, kind, {target_snap: self, attr: op[:attr], from: from, to: to})
         end
       end
 
@@ -266,7 +317,7 @@ module MonitorWithEvent
           #NOTE record是被新建或删除的另一端对象
           #如果设置了filter，调用filter并检查是否符合规则
           next if !builder.check_filters(target, nil, nil)
-          builder.event_create(target, kind, builder, {target_snap: target.attributes, :"#{record.class.name.downcase}" => record.attributes})
+          builder.event_create(target, kind, {target_snap: target, :"#{record.class.name.downcase}" => record})
         end
         base.send(asso.macro, op[:asso], asso.options.merge(method => callback))
       end
