@@ -1,5 +1,6 @@
 class Todo < ActiveRecord::Base
   include AutoKeygen
+  include Rails.application.routes.url_helpers
 
   belongs_to :project
   has_many :comments, dependent: :destroy

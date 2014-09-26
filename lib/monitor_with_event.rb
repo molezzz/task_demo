@@ -52,6 +52,17 @@ module MonitorWithEvent
 
 
     #
+    # 添加一个hook供编译模板时调用
+    # @param &block [Block]
+    #
+    # @return [EventBuilder]
+    def hook(block)
+      self[:hooks] ||= []
+      self[:hooks].unshift block
+    end
+
+
+    #
     # 可以指定一个块来设置默认的source_id
     # 当:event_source未被设置时，调用这个块获取source对象
     # 一般用于对象被创建时
@@ -98,7 +109,8 @@ module MonitorWithEvent
         kind: kind,
         source_id: source_id,
         target: target.class.name,
-        target_id: target.id
+        target_id: target.id,
+        data: data
       }).save!
     end
 
@@ -160,8 +172,12 @@ module MonitorWithEvent
 
         base.singleton_class.instance_eval do
 
-          define_method(:events_config) do
-            config.dup
+          define_method(:event_configs) do
+            @_config ||= config.dup
+          end
+
+          define_method(:event_config) do |key|
+            event_configs[key]
           end
 
           define_method(:on) do |op, &block|
@@ -197,7 +213,7 @@ module MonitorWithEvent
           #NOTE 这里的self是被创建或修改的对象
           #如果设置了filter，调用filter并检查是否符合规则
           next if !builder.check_filters(self, nil, nil)
-          builder.event_create(self, kind, builder)
+          builder.event_create(self, kind, builder,{targe_snap: self.attributes})
         end
       end
 
@@ -225,7 +241,7 @@ module MonitorWithEvent
           #如果设置了filter，调用filter并检查是否符合规则
           from, to = self.send("#{op[:attr]}_change")
           next if !builder.check_filters(self, to, from)
-          builder.event_create(self, kind, builder)
+          builder.event_create(self, kind, builder, {target_snap: self.attributes, attr: op[:attr], from: from, to: to})
         end
       end
 
@@ -250,7 +266,7 @@ module MonitorWithEvent
           #NOTE record是被新建或删除的另一端对象
           #如果设置了filter，调用filter并检查是否符合规则
           next if !builder.check_filters(target, nil, nil)
-          builder.event_create(target, kind, builder, {"#{record.class.name.downcase}" => record})
+          builder.event_create(target, kind, builder, {target_snap: target.attributes, :"#{record.class.name.downcase}" => record.attributes})
         end
         base.send(asso.macro, op[:asso], asso.options.merge(method => callback))
       end
