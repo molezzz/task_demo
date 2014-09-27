@@ -20,3 +20,8 @@ document
 * cd task_demo
 * yard server
 
+
+simple UML
+========
+
+* see doc/task_demo.png
