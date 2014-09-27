@@ -1,10 +1,13 @@
 class TodosController < ApplicationController
+  include UserAuth
   before_action :set_todo, only: [:show, :edit, :update, :destroy]
 
   # GET /todos
   # GET /todos.json
   def index
-    @todos = Todo.all
+    chain = Todo
+    chain = Todo.where(project_id: params[:project_id]) if params[:project_id]
+    @todos = chain.all
   end
 
   # GET /todos/1
@@ -41,12 +44,14 @@ class TodosController < ApplicationController
   # PATCH/PUT /todos/1.json
   def update
     respond_to do |format|
-      if @todo.update(todo_params)
-        format.html { redirect_to @todo, notice: 'Todo was successfully updated.' }
-        format.json { render :show, status: :ok, location: @todo }
-      else
-        format.html { render :edit }
-        format.json { render json: @todo.errors, status: :unprocessable_entity }
+      current_user.will_change(@todo) do |todo|
+        if todo.update(todo_params)
+          format.html { redirect_to todo, notice: 'Todo was successfully updated.' }
+          format.json { render :show, status: :ok, location: todo }
+        else
+          format.html { render :edit }
+          format.json { render json: todo.errors, status: :unprocessable_entity }
+        end
       end
     end
   end

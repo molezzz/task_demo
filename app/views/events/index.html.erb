@@ -17,34 +17,34 @@
 
   <div class="panel panel-default" ng-repeat="(date, evtsInTime) in events">
     <div class="panel-heading"><h5>{{date | dateFmt}}</h5></div>
-    <div class="panel-body">  
-           
+    <div class="panel-body">
+
       <ul class="media-list" ng-repeat="(time, evts) in evtsInTime">
         <li class="media" ng-repeat="(key, evt) in evts">
           <div class="clearfix">
             <blockquote style="width:100%" ng-show="evts[$index - 1].project_id != evt.project_id" class="pull-right">
               <a href="/projects/{{projects[evt.project_id].key}}">{{projects[evt.project_id].title}}</a>
             </blockquote>
-          </div>          
+          </div>
           <a class="pull-left" href="/users/{{evt.user.key}}}">
             <img class="media-object" data-src="holder.js/64x64" alt="64x64" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCI+PHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiBmaWxsPSIjZWVlIi8+PHRleHQgdGV4dC1hbmNob3I9Im1pZGRsZSIgeD0iMzIiIHk9IjMyIiBzdHlsZT0iZmlsbDojYWFhO2ZvbnQtd2VpZ2h0OmJvbGQ7Zm9udC1zaXplOjEycHg7Zm9udC1mYW1pbHk6QXJpYWwsSGVsdmV0aWNhLHNhbnMtc2VyaWY7ZG9taW5hbnQtYmFzZWxpbmU6Y2VudHJhbCI+NjR4NjQ8L3RleHQ+PC9zdmc+" style="width: 64px; height: 64px;">
-            <span>{{time}}</span>              
+            <span>{{time}}</span>
           </a>
           <div class="media-body">
             <h6 class="media-heading">
               <span class="glyphicon {{evt.kind|kindToIcon}}"></span>&nbsp;
-              <a href="/users/{{evt.user.key}}">{{evt.user.name}}</span>:</a> 
+              <a href="/users/{{evt.user.key}}">{{evt.user.name}}</span>:</a>
               <span ng-bind-html="evt.title | htmlSafe"></span>
             </h6>
             <p ng-bind-html="evt.content | htmlSafe"></p>
           </div>
         </li>
       </ul>
-      
+
     </div>
     <div style="text-align: center;" pv-scrolled="nextPage()">
-      <a class="btn btn-success btn-lg" style="margin:1em auto;">{{loadLabel}}</a>
-    </div>    
+      <a class="btn btn-success btn-lg" ng-class="{disabled: noMore}" style="margin:1em auto;">{{loadLabel}}</a>
+    </div>
   </div>
 
 </div>
@@ -61,22 +61,22 @@ app.directive('pvScrolled', function($window) {
 
     win.bind('scroll', function() {
       // console.log({
-      //   '可视区高': $window.innerHeight, 
+      //   '可视区高': $window.innerHeight,
       //   '卷动高度': $window.pageYOffset,
       //   '元素距顶部距离': raw.offsetTop
       // });
-      
+
       if(raw.offsetTop - $window.pageYOffset  < $window.innerHeight){
         scope.$apply(attr.pvScrolled);
       };
-    });   
+    });
   };
 });
 app.filter('dateFmt', function(){
   var map = {
     '<%=Time.zone.now.strftime('%Y-%m-%d')%>': '今',
     '<%=(Time.zone.now - 1.day).strftime('%Y-%m-%d')%>': '昨'
-  };  
+  };
   return function(val){
 
     return map[val] ? map[val] : val;
@@ -121,44 +121,48 @@ app.controller('EventsCtrl', ['$scope', '$http', '$sce', function($scope, $http,
 
   $scope.$watch('filter',function(to, from){
     var config = {
-      method: 'GET', 
+      method: 'GET',
       url: '<%=events_path%>.json',
-      params: {page: $scope.filter.page} 
+      params: {page: to.page}
     };
-    var isEmpty = function(obj) { 
-      for(var name in obj){ 
-        return false; 
-      } 
-      return true; 
-    }; 
+    var isEmpty = function(obj) {
+      for(var name in obj){
+        return false;
+      }
+      return true;
+    };
     if(to.member && to.member.key){
-      config.params = { member: to.member.key }
+      config.params.member= to.member.key;
+    }
+    //如果member发生变化，清空状态列表，并重置页数
+    console.log([to.member.key, from.member.key]);
+    if(to.member.key != from.member.key){
+      config.params.page = 1;
+      $scope.noMore = false;
+      $scope.events = {};
     }
     if($scope.noMore == true) return;
     $scope.onload = true;
-    $http(config).success(function(json, status, headers, config) {      
+    $http(config).success(function(json, status, headers, config) {
       if(isEmpty(json)){
         $scope.loadLabel = '没有更多的动态了';
         $scope.noMore = true;
         return;
-      };      
+      };
       angular.forEach(json, function(value, key){
-        console.log('1L', key, $scope.events[key]);        
         if($scope.events[key]){
           angular.forEach(value, function(v2, k2){
-            console.log('2L', k2, $scope.events[key][k2]);
             if($scope.events[key][k2]){
-              $scope.events[key][k2] = $scope.events[key][k2].concat(v2);              
+              $scope.events[key][k2] = $scope.events[key][k2].concat(v2);
             } else {
               $scope.events[key][k2] = v2;
             }
-          });          
+          });
         } else {
           $scope.events[key] = value;
         }
       });
-      console.log($scope.events);
-      $scope.onload = false;     
+      $scope.onload = false;
     })
     .error(function(data, status, headers, config) {
       alert(data);

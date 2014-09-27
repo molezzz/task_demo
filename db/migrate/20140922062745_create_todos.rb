@@ -9,6 +9,7 @@ class CreateTodos < ActiveRecord::Migration
       t.datetime :begin_at
       t.datetime :end_at
       t.datetime :complate_at
+      t.datetime :delete_at
 
       t.timestamps
     end

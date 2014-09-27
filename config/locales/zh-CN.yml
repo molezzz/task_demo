@@ -17,3 +17,4 @@ zh-CN:
       go: 开始执行任务 -> {{self|link_to_todo}}
       destroy: 销毁了任务 -> {{self|link_to_todo}}
       add_comment: 评论了任务 -> {{self|link_to_todo}}
+      delete: 删除了任务 -> {{self|link_to_todo}}

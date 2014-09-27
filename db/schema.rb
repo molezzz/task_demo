@@ -78,6 +78,7 @@ ActiveRecord::Schema.define(version: 20140922063315) do
     t.datetime "begin_at"
     t.datetime "end_at"
     t.datetime "complate_at"
+    t.datetime "delete_at"
     t.datetime "created_at"
     t.datetime "updated_at"
   end
@@ -93,6 +94,8 @@ ActiveRecord::Schema.define(version: 20140922063315) do
     t.string   "name"
     t.string   "email"
     t.text     "avatar"
+    t.string   "password"
+    t.string   "salt"
     t.datetime "created_at"
     t.datetime "updated_at"
   end

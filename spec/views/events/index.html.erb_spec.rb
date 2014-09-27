@@ -21,6 +21,6 @@ RSpec.describe "events/index", :type => :view do
   end
 
   it "renders a list of events" do
-    
+
   end
 end

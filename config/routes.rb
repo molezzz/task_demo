@@ -9,7 +9,9 @@ Rails.application.routes.draw do
 
   resources :todos
 
-  resources :projects
+  resources :projects do
+    resources :todos, shallow: true
+  end
 
   resources :teams
 

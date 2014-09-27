@@ -44,8 +44,17 @@ RSpec.describe EventsController, :type => :controller do
     end
 
     it "with JSON format" do
-      get :index, {}, valid_session, format: :json
-      expect(response.body).to eq(1)
+      team = FactoryGirl.create(:team)
+      project_web = FactoryGirl.create(:project_web)
+      bill = FactoryGirl.create(:user_bill, team: team)
+      todo = FactoryGirl.create(:todo_0, project: project_web, creator: bill)
+      bill.will_change(todo) do |todo|
+        todo.go
+        todo.complate
+      end
+
+      get :index, {}, valid_session
+      expect(response.status).to eq(200)
     end
 
   end

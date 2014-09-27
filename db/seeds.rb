@@ -11,6 +11,7 @@ Team.delete_all
 Project.delete_all
 Todo.delete_all
 Access.delete_all
+Event.delete_all
 
 team = FactoryGirl.create(:team)
 project_wechat = FactoryGirl.create(:project_wechat)

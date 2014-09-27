@@ -27,6 +27,8 @@ class User < ActiveRecord::Base
                        allow_blank: true
                      }
 
+  before_create :salt_gen
+
   as_event_source
 
 
@@ -35,5 +37,8 @@ class User < ActiveRecord::Base
     self.class.where(team_id: self.team_id)
   end
 
+  def salt_gen
+    self.salt = SecureRandom.hex(16)
+  end
 
 end

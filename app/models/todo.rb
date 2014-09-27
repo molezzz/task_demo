@@ -1,5 +1,5 @@
 class Todo < ActiveRecord::Base
-  include AutoKeygen  
+  include AutoKeygen
 
   belongs_to :project
   has_many :comments, dependent: :destroy
@@ -10,15 +10,15 @@ class Todo < ActiveRecord::Base
 
 
   as_event_target do
-    
+
     hooks = {
       link_to_user: ->(id){
         user = User.find(id)
         %{ <a href="/users/#{id}">#{user.name}</a> }
       },
-      link_to_todo: ->(todo){                      
+      link_to_todo: ->(todo){
         %{ <a href="/todos/#{todo.id}">#{todo.content}</a> }
-      }  
+      }
     }
 
     #创建任务
@@ -108,7 +108,7 @@ class Todo < ActiveRecord::Base
     on(attr: :owner_id, to: nil) do |cfg|
 
       cfg.name 'revoke'
-      cfg.title_tpl I18n.t('event.todo.revoke')     
+      cfg.title_tpl I18n.t('event.todo.revoke')
       cfg.hook :link_to_todo, hooks[:link_to_todo]
 
     end
@@ -118,6 +118,15 @@ class Todo < ActiveRecord::Base
 
       cfg.name 'go'
       cfg.title_tpl I18n.t('event.todo.go')
+      cfg.hook :link_to_todo, hooks[:link_to_todo]
+
+    end
+
+    #删除一个任务
+    on(attr: :delete_at, from: nil) do |cfg|
+
+      cfg.name 'delete'
+      cfg.title_tpl I18n.t('event.todo.delete')
       cfg.hook :link_to_todo, hooks[:link_to_todo]
 
     end
@@ -186,6 +195,14 @@ class Todo < ActiveRecord::Base
   # @return [Boolean]
   def revoke
     update_attribute(:owner_id, nil)
+  end
+
+  #
+  # 标记删除
+  #
+  # @return [type] [description]
+  def del
+    update_attribute(:delete_at, Time.zone.now)
   end
 
 end

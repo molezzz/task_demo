@@ -97,7 +97,7 @@ module MonitorWithEvent
     #
     # 用于生成并保存Event
     # @param target [ActiveRecord]
-    # @param kind [String]    
+    # @param kind [String]
     # @param data={} [Hash] 要一并保存的其他数据
     #
     # @return [Boolean]
@@ -115,10 +115,10 @@ module MonitorWithEvent
     end
 
     def compile(data)
-      result = { title: '', content: ''}      
+      result = { title: '', content: ''}
       config = self
 
-      hooks = {        
+      hooks = {
         'datetime' => ->(time){
           if time.respond_to? :strftime
             time.strftime('%Y-%m-%d %H:%M:%S')
@@ -131,9 +131,9 @@ module MonitorWithEvent
       hooks.merge!(self[:hooks]) if self[:hooks]
 
       #处理模板
-      
+
       [:title, :content].each do |attr|
-        #从模板中提取'{{name|action}}'这种格式的变量        
+        #从模板中提取'{{name|action}}'这种格式的变量
         result[attr] = self[:"#{attr}_tpl"].gsub(/{{([\s\S]+?)}}/) do |match|
           name, hook = ($1).split('|').collect {|s| s.strip }
           #处理 foo.bar 的形式
@@ -141,9 +141,9 @@ module MonitorWithEvent
           key = members.shift
           key = 'target_snap' if key == 'self'
           key = key.to_sym
-          #检查数据中是否有相应的key          
+          #检查数据中是否有相应的key
           if data.key?(key)
-            obj = data[key]            
+            obj = data[key]
             #如果是成员操作，取出成员
             if !members.blank?
               members.each {|member| obj = obj.send(member) if obj.respond_to?(member) }
@@ -156,11 +156,15 @@ module MonitorWithEvent
 
             obj
 
-          end 
+          end
 
         end unless self[:"#{attr}_tpl"].nil?
       end
-      
+
+      data.each do |k,v|
+        result[k] = v.respond_to?(:attributes) ? v.send(:attributes) : v
+      end
+
       result
 
     end #compile
@@ -171,8 +175,10 @@ module MonitorWithEvent
 
 
     def as_event_target
-      self.send :extend, TargetClassMethod
-      yield if block_given?
+      if self.table_exists? #确保migrate能正常执行
+        self.send :extend, TargetClassMethod
+        yield if block_given?
+      end
     end
 
     def as_event_source

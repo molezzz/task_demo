@@ -143,6 +143,17 @@ RSpec.describe Todo, :type => :model do
       expect(event.kind).to eq('todo_attr_begin_at_changed_go')
     end
 
+    it "should create a `todo_change...delete` event on delete a todo" do
+      bill = FactoryGirl.create(:user_bill)
+      todo = FactoryGirl.create(:todo_test)
+      bill.will_change(todo) do |t|
+        expect{todo.del}.to change{todo.delete_at}.from(nil)
+      end
+      event = todo.events.last
+      expect(event).to be_instance_of(Event)
+      expect(event.kind).to eq('todo_attr_delete_at_changed_delete')
+    end
+
     it "should create a `todo_asso...add` event on post a comment to a todo" do
       todo = FactoryGirl.create(:todo_test)
       todo.comments << FactoryGirl.build(:comment)

@@ -1,4 +1,5 @@
 class TeamsController < ApplicationController
+  include UserAuth
   before_action :set_team, only: [:show, :edit, :update, :destroy]
 
   # GET /teams
