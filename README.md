@@ -13,3 +13,10 @@ how to use
 * rake db:migrate
 * rake db:seed
 * rails s
+
+document
+========
+
+* cd task_demo
+* yard server
+
