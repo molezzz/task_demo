@@ -1,5 +1,6 @@
 class Todo < ActiveRecord::Base
   include AutoKeygen
+  include Eventable
 
   belongs_to :project
   has_many :comments, dependent: :destroy
@@ -8,148 +9,35 @@ class Todo < ActiveRecord::Base
 
   validates :content, presence: true
 
-
-  as_event_target do
-
-    hooks = {
-      link_to_user: ->(id){
-        user = User.find(id)
-        %{ <a href="/users/#{id}">#{user.name}</a> }
-      },
-      link_to_todo: ->(todo){
-        %{ <a href="/todos/#{todo.id}">#{todo.content}</a> }
+  class << self
+    # 设置需要监控事件，以及模板
+    #
+    # @return [Hash]
+    def monitor_configs
+      {
+        default_source: ->(){ self.creator }, #在未指定 event_source 或块内 source 的时候，默认的事件对象
+        created: true, #创建任务
+        destroyed: true, #销毁任务
+        changed: {
+          content: { name: :modify }, #修改任务内容
+          complate_at: [
+            { name: :finished, filter: ->(to, from){ from == nil } }, #完成任务
+            { name: :fix_complate, filter: ->(to, from){ from != nil && to != nil } }, #修改完成时间
+            { name: :reopen, filter: ->(to){ to == nil }} #重新打开任务
+          ]
+          end_at: { name: :change_end }, #修改任务结束时间
+          owner_id: { name: :dispatch, filter: ->(to, from){ from == nil} }, #派发任务
+          owner_id: { name: :redispatch, filter: ->(to, from){ from != nil && to != nil } }, #重新派发任务
+          owner_id: { name: :revoke, filter: ->(to){ to == nil} }, #取消任务派发
+          begin_at: { name: :go, filter: ->(to, from){ from == nil } }, #开始执行任务
+          delete_at: { name: :delete, filter: ->(to, from){ from == nil} } #删除任务
+          #由于这种写法不好监测关联，所以对评论的记录被移到Comment模型
+        }
       }
-    }
-
-    #创建任务
-    on :create do |cfg|
-
-      cfg.title_tpl I18n.t('event.todo.create')
-      cfg.default_source_id do |todo|
-        todo.creator_id
-      end
-      cfg.hook :link_to_todo, hooks[:link_to_todo]
-
     end
 
-    #修改任务
-    on(attr: :content) do |cfg|
+  end
 
-      cfg.title_tpl I18n.t('event.todo.content')
-      cfg.hook :link_to_todo, hooks[:link_to_todo]
-
-    end
-
-    #完成任务
-    on(attr: :complate_at, from: nil) do |cfg|
-
-      cfg.name 'finished'
-      cfg.title_tpl I18n.t('event.todo.finished')
-      cfg.hook :link_to_todo, hooks[:link_to_todo]
-
-    end
-
-    #修改完成时间
-    on(attr: :complate_at) do |cfg|
-
-      cfg.name 'fix_complate'
-      cfg.title_tpl I18n.t('event.todo.fix_complate')
-      #使用filter区分任务完成
-      cfg.filter do |record, to, from|
-        !to.nil? && !from.nil?
-      end
-      cfg.hook :link_to_todo, hooks[:link_to_todo]
-
-    end
-
-    #重新打开任务
-    on(attr: :complate_at, to: nil) do |cfg|
-
-      cfg.name 'reopen'
-      cfg.title_tpl I18n.t('event.todo.reopen')
-      cfg.hook :link_to_todo, hooks[:link_to_todo]
-
-    end
-
-    #修改任务结束时间
-    on(attr: :end_at) do |cfg|
-      cfg.name 'change_end'
-      cfg.title_tpl I18n.t('event.todo.change_end')
-      cfg.hook :link_to_todo, hooks[:link_to_todo]
-
-    end
-
-    #派发任务
-    on(attr: :owner_id, from: nil) do |cfg|
-
-      cfg.name 'dispatch'
-      cfg.title_tpl I18n.t('event.todo.dispatch')
-      cfg.hook :link_to_user, hooks[:link_to_user]
-      cfg.hook :link_to_todo, hooks[:link_to_todo]
-
-    end
-
-    #重新派发任务
-    on(attr: :owner_id) do |cfg|
-
-      cfg.name 'redispatch'
-      cfg.title_tpl I18n.t('event.todo.redispatch')
-      #在这里添加filter区分派发任务
-      cfg.filter do |record, to, from|
-        # 只有owner_id在两个用户之间发生变化时才收集
-        !to.nil? && !from.nil?
-      end
-      cfg.hook :link_to_user, hooks[:link_to_user]
-      cfg.hook :link_to_todo, hooks[:link_to_todo]
-
-    end
-
-    #取消派发任务
-    on(attr: :owner_id, to: nil) do |cfg|
-
-      cfg.name 'revoke'
-      cfg.title_tpl I18n.t('event.todo.revoke')
-      cfg.hook :link_to_todo, hooks[:link_to_todo]
-
-    end
-
-    #开始执行一个任务
-    on(attr: :begin_at, from: nil) do |cfg|
-
-      cfg.name 'go'
-      cfg.title_tpl I18n.t('event.todo.go')
-      cfg.hook :link_to_todo, hooks[:link_to_todo]
-
-    end
-
-    #删除一个任务
-    on(attr: :delete_at, from: nil) do |cfg|
-
-      cfg.name 'delete'
-      cfg.title_tpl I18n.t('event.todo.delete')
-      cfg.hook :link_to_todo, hooks[:link_to_todo]
-
-    end
-
-    #任务被销毁，实际上这个应该用不到
-    on :destroy do |cfg|
-
-      cfg.title_tpl I18n.t('event.todo.destroy')
-      cfg.hook :link_to_todo, hooks[:link_to_todo]
-
-    end
-
-    #添加任务评论
-    on(asso: :comments, to: :add) do |cfg|
-
-      cfg.title_tpl I18n.t('event.todo.add_comment')
-      cfg.content_tpl '{{comment.content}}'
-      cfg.hook :link_to_todo, hooks[:link_to_todo]
-
-    end
-
-
-  end #as_event_target
 
   #
   # 完成任务
