@@ -13,14 +13,14 @@ class Comment < ActiveRecord::Base
     # @return [Hash]
     def monitor_configs
       {
-        default_source: ->(){ self.user },
+        default_source: ->{ self.user },
         created: {
           name: :to_todo,
-          filter: ->(){
+          filter: ->(to, from){
             #这里的self指代被创建的 comment
             !self.todo_id.nil?
           },
-          source: ->(){
+          source: ->{
             self.todo.event_source || self.user
           }
         }

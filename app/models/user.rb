@@ -29,9 +29,16 @@ class User < ActiveRecord::Base
 
   before_create :salt_gen
 
-  as_event_source
-
-
+  #
+  # 调用该方法并在块内操作，以保证event可以被正确记录
+  # @param target_object [ActiveRecord] 目标对象
+  # @param &block [Block]
+  #
+  # @return [Object]
+  def will_change(target_object, &block)
+    target_object.event_source = self
+    block.call(target_object)
+  end
 
   def team_brothers
     self.class.where(team_id: self.team_id)

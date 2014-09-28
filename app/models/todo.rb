@@ -15,7 +15,7 @@ class Todo < ActiveRecord::Base
     # @return [Hash]
     def monitor_configs
       {
-        default_source: ->(){ self.creator }, #在未指定 event_source 或块内 source 的时候，默认的事件对象
+        default_source: -> { self.creator }, #在未指定 event_source 或块内 source 的时候，默认的事件对象
         created: true, #创建任务
         destroyed: true, #销毁任务
         changed: {
@@ -23,12 +23,14 @@ class Todo < ActiveRecord::Base
           complate_at: [
             { name: :finished, filter: ->(to, from){ from == nil } }, #完成任务
             { name: :fix_complate, filter: ->(to, from){ from != nil && to != nil } }, #修改完成时间
-            { name: :reopen, filter: ->(to){ to == nil }} #重新打开任务
-          ]
+            { name: :reopen, filter: ->(to, from){ to == nil }} #重新打开任务
+          ],
           end_at: { name: :change_end }, #修改任务结束时间
-          owner_id: { name: :dispatch, filter: ->(to, from){ from == nil} }, #派发任务
-          owner_id: { name: :redispatch, filter: ->(to, from){ from != nil && to != nil } }, #重新派发任务
-          owner_id: { name: :revoke, filter: ->(to){ to == nil} }, #取消任务派发
+          owner_id: [ 
+            { name: :dispatch, filter: ->(to, from){ from == nil} }, #派发任务
+            { name: :redispatch, filter: ->(to, from){ from != nil && to != nil } }, #重新派发任务
+            { name: :revoke, filter: ->(to, from){ to == nil} } #取消任务派发
+          ],
           begin_at: { name: :go, filter: ->(to, from){ from == nil } }, #开始执行任务
           delete_at: { name: :delete, filter: ->(to, from){ from == nil} } #删除任务
           #由于这种写法不好监测关联，所以对评论的记录被移到Comment模型

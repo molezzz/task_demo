@@ -16,11 +16,12 @@ RSpec.describe Todo, :type => :model do
 
   describe "With Events" do
 
-    it "should create a `todo_create` event on created" do
+    it "should create a `todo.created` event on created" do
       todo = FactoryGirl.create(:todo_test)
+
       event = todo.events.last
       expect(event).to be_instance_of(Event)
-      expect(event.kind).to eq('todo_create')
+      expect(event.kind).to eq('todo.created')
       expect(event.target_id).to eq(todo.id)
     end
 
@@ -31,11 +32,11 @@ RSpec.describe Todo, :type => :model do
 
       event = todo.events.last
       expect(event).to be_instance_of(Event)
-      expect(event.kind).to eq('todo_create')
+      expect(event.kind).to eq('todo.created')
       expect(event.source_id).to eq(bill.id)
     end
 
-    it "should create a `todo_destroy` event on destroy" do
+    it "should create a `todo.destroyed` event on destroy" do
       todo = FactoryGirl.create(:todo_test)
       todo.destroy
       event = Event.where(target_id: todo.id)
@@ -43,19 +44,19 @@ RSpec.describe Todo, :type => :model do
                    .last
 
       expect(event).to be_instance_of(Event)
-      expect(event.kind).to eq('todo_destroy')
+      expect(event.kind).to eq('todo.destroyed')
     end
 
-    it "should create a `todo_change...` event on `content` change" do
+    it "should create a `todo.changed...` event on `content` change" do
       todo = FactoryGirl.create(:todo_test)
       todo.content = 'hello'
       todo.save!
       event = todo.events.last
       expect(event).to be_instance_of(Event)
-      expect(event.kind).to eq('todo_attr_content_changed')
+      expect(event.kind).to eq('todo.changed.content.modify')
     end
 
-    it "should create a `todo_..._finished` event but not a `todo_...fix_complate` event on complate a todo" do
+    it "should create a `todo...finished` event but not a `todo...fix_complate` event on complate a todo" do
 
       todo = FactoryGirl.create(:todo_test)
       time = Time.zone.now
@@ -65,11 +66,11 @@ RSpec.describe Todo, :type => :model do
       expect(todo.events.count).to eq(2)
       event = todo.events.last
       expect(event).to be_instance_of(Event)
-      expect(event.kind).to eq('todo_attr_complate_at_changed_finished')
+      expect(event.kind).to eq('todo.changed.complate_at.finished')
 
     end
 
-    it "should create a `todo_...fix_complate` event on change todo complate time" do
+    it "should create a `todo...fix_complate` event on change todo complate time" do
 
       todo = FactoryGirl.create(:todo_test)
       time1 = Time.zone.now
@@ -80,11 +81,11 @@ RSpec.describe Todo, :type => :model do
 
       event = todo.events.last
       expect(event).to be_instance_of(Event)
-      expect(event.kind).to eq('todo_attr_complate_at_changed_fix_complate')
+      expect(event.kind).to eq('todo.changed.complate_at.fix_complate')
 
     end
 
-    it "should create a `todo_...reopen` event on reopen a todo" do
+    it "should create a `todo...reopen` event on reopen a todo" do
 
       todo = FactoryGirl.create(:todo_test)
       todo.complate
@@ -93,11 +94,11 @@ RSpec.describe Todo, :type => :model do
 
       event = todo.events.last
       expect(event).to be_instance_of(Event)
-      expect(event.kind).to eq('todo_attr_complate_at_changed_reopen')
+      expect(event.kind).to eq('todo.changed.complate_at.reopen')
 
     end
 
-    it "should create a `todo_change...dispatch` event on dispatch a todo" do
+    it "should create a `todo.changed...dispatch` event on dispatch a todo" do
 
       user = FactoryGirl.create(:user_bill)
       todo = FactoryGirl.create(:todo_test)
@@ -105,10 +106,10 @@ RSpec.describe Todo, :type => :model do
 
       event = todo.events.last
       expect(event).to be_instance_of(Event)
-      expect(event.kind).to eq('todo_attr_owner_id_changed_dispatch')
+      expect(event.kind).to eq('todo.changed.owner_id.dispatch')
     end
 
-    it "should create a `todo_change...redispatch` event on redispatch a todo" do
+    it "should create a `todo.change...redispatch` event on redispatch a todo" do
 
       bill = FactoryGirl.create(:user_bill)
       tom = FactoryGirl.create(:user_tom)
@@ -118,10 +119,10 @@ RSpec.describe Todo, :type => :model do
 
       event = todo.events.last
       expect(event).to be_instance_of(Event)
-      expect(event.kind).to eq('todo_attr_owner_id_changed_redispatch')
+      expect(event.kind).to eq('todo.changed.owner_id.redispatch')
     end
 
-    it "should create a `todo_change...revoke` event on revoke a todo" do
+    it "should create a `todo.change...revoke` event on revoke a todo" do
       bill = FactoryGirl.create(:user_bill)
       todo = FactoryGirl.create(:todo_test)
       todo.dispatch_to(bill)
@@ -129,10 +130,10 @@ RSpec.describe Todo, :type => :model do
 
       event = todo.events.last
       expect(event).to be_instance_of(Event)
-      expect(event.kind).to eq('todo_attr_owner_id_changed_revoke')
+      expect(event.kind).to eq('todo.changed.owner_id.revoke')
     end
 
-    it "should create a `todo_change...go` event on start a todo" do
+    it "should create a `todo.change...go` event on start a todo" do
       bill = FactoryGirl.create(:user_bill)
       todo = FactoryGirl.create(:todo_test)
       todo.dispatch_to(bill)
@@ -140,10 +141,10 @@ RSpec.describe Todo, :type => :model do
 
       event = todo.events.last
       expect(event).to be_instance_of(Event)
-      expect(event.kind).to eq('todo_attr_begin_at_changed_go')
+      expect(event.kind).to eq('todo.changed.begin_at.go')
     end
 
-    it "should create a `todo_change...delete` event on delete a todo" do
+    it "should create a `todo.change...delete` event on delete a todo" do
       bill = FactoryGirl.create(:user_bill)
       todo = FactoryGirl.create(:todo_test)
       bill.will_change(todo) do |t|
@@ -151,7 +152,7 @@ RSpec.describe Todo, :type => :model do
       end
       event = todo.events.last
       expect(event).to be_instance_of(Event)
-      expect(event.kind).to eq('todo_attr_delete_at_changed_delete')
+      expect(event.kind).to eq('todo.changed.delete_at.delete')
     end
 
     it "should create a `todo_asso...add` event on post a comment to a todo" do
