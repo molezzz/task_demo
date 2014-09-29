@@ -1,0 +1,8 @@
+<h6 class="media-heading">
+  <span class="glyphicon glyphicon-folder-open"></span>&nbsp;
+  <%=link_to event.source.name, user_path(event.source)%>
+  <span>
+    添加了新任务：<%=link_to event.eventable.content, todo_path(event.eventable)%>
+  </span>
+</h6>
+<p></p>

@@ -20,6 +20,7 @@ class Comment < ActiveRecord::Base
             #这里的self指代被创建的 comment
             !self.todo_id.nil?
           },
+          belongs_to: :todo,
           source: ->{
             self.todo.event_source || self.user
           }

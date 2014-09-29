@@ -21,7 +21,7 @@ RSpec.describe Todo, :type => :model do
 
       event = todo.events.last
       expect(event).to be_instance_of(Event)
-      expect(event.kind).to eq('todo.created')
+      expect(event.kind).to eq('todo.created.default')
       expect(event.target_id).to eq(todo.id)
     end
 
@@ -32,7 +32,7 @@ RSpec.describe Todo, :type => :model do
 
       event = todo.events.last
       expect(event).to be_instance_of(Event)
-      expect(event.kind).to eq('todo.created')
+      expect(event.kind).to eq('todo.created.default')
       expect(event.source_id).to eq(bill.id)
     end
 
@@ -44,7 +44,7 @@ RSpec.describe Todo, :type => :model do
                    .last
 
       expect(event).to be_instance_of(Event)
-      expect(event.kind).to eq('todo.destroyed')
+      expect(event.kind).to eq('todo.destroyed.default')
     end
 
     it "should create a `todo.changed...` event on `content` change" do
@@ -161,7 +161,7 @@ RSpec.describe Todo, :type => :model do
 
       event = todo.events.last
       expect(event).to be_instance_of(Event)
-      expect(event.kind).to eq('todo_asso_comments_add')
+      expect(event.kind).to eq('comment.created.to_todo')
     end
 
     it "should have a source when in `will_change` block" do

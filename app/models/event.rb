@@ -1,5 +1,5 @@
 class Event < ActiveRecord::Base
-  store :data, accessors: [:target_snap, :attr, :from, :to, :title, :content] ,coder: JSON
+  store :data, accessors: [:target_snap, :attr, :from, :to, :asso] ,coder: JSON
 
   belongs_to :source, class_name: 'User', foreign_key: 'source_id'
 

@@ -23,20 +23,15 @@
         <li class="media" ng-repeat="(key, evt) in evts">
           <div class="clearfix">
             <blockquote style="width:100%" ng-show="evts[$index - 1].project_id != evt.project_id" class="pull-right">
-              <a href="/projects/{{projects[evt.project_id].key}}">{{projects[evt.project_id].title}}</a>
+              <a href="/projects/{{evt.project.key}}">{{evt.project.title}}</a>
             </blockquote>
           </div>
           <a class="pull-left" href="/users/{{evt.user.key}}}">
             <img class="media-object" data-src="holder.js/64x64" alt="64x64" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCI+PHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiBmaWxsPSIjZWVlIi8+PHRleHQgdGV4dC1hbmNob3I9Im1pZGRsZSIgeD0iMzIiIHk9IjMyIiBzdHlsZT0iZmlsbDojYWFhO2ZvbnQtd2VpZ2h0OmJvbGQ7Zm9udC1zaXplOjEycHg7Zm9udC1mYW1pbHk6QXJpYWwsSGVsdmV0aWNhLHNhbnMtc2VyaWY7ZG9taW5hbnQtYmFzZWxpbmU6Y2VudHJhbCI+NjR4NjQ8L3RleHQ+PC9zdmc+" style="width: 64px; height: 64px;">
             <span>{{time}}</span>
           </a>
-          <div class="media-body">
-            <h6 class="media-heading">
-              <span class="glyphicon {{evt.kind|kindToIcon}}"></span>&nbsp;
-              <a href="/users/{{evt.user.key}}">{{evt.user.name}}</span>:</a>
-              <span ng-bind-html="evt.title | htmlSafe"></span>
-            </h6>
-            <p ng-bind-html="evt.content | htmlSafe"></p>
+          <div class="media-body" ng-bind-html="evt.html | htmlSafe">
+
           </div>
         </li>
       </ul>
@@ -51,7 +46,6 @@
 <script type="text/javascript">
 (function(){
 var teamMembers = <%=@team_members.to_json.html_safe%>;
-var projects = <%=@projects.to_json.html_safe%>;
 
 var app = angular.module('tower.events', [], angular.noop);
 app.directive('pvScrolled', function($window) {
@@ -84,7 +78,7 @@ app.filter('dateFmt', function(){
 });
 app.filter('htmlSafe', function($sce) {
   return function(val) {
-      return $sce.trustAsHtml(val);
+    return $sce.trustAsHtml(val);
   };
 });
 app.filter('kindToIcon', function() {
@@ -102,7 +96,6 @@ app.filter('kindToIcon', function() {
 app.controller('EventsCtrl', ['$scope', '$http', '$sce', function($scope, $http, $sce){
 
   $scope.teamMembers = teamMembers;
-  $scope.projects = projects;
   $scope.teamMembers.unshift({key: null, name: '所有成员'});
   $scope.events = {};
   $scope.loadLabel = '更多动态加载中...';
@@ -135,7 +128,6 @@ app.controller('EventsCtrl', ['$scope', '$http', '$sce', function($scope, $http,
       config.params.member= to.member.key;
     }
     //如果member发生变化，清空状态列表，并重置页数
-    console.log([to.member.key, from.member.key]);
     if(to.member.key != from.member.key){
       config.params.page = 1;
       $scope.noMore = false;
@@ -149,18 +141,15 @@ app.controller('EventsCtrl', ['$scope', '$http', '$sce', function($scope, $http,
         $scope.noMore = true;
         return;
       };
+      //对数据进行分组 {'yyyy-mm-dd': {'hh:mm': [] }}
       angular.forEach(json, function(value, key){
-        if($scope.events[key]){
-          angular.forEach(value, function(v2, k2){
-            if($scope.events[key][k2]){
-              $scope.events[key][k2] = $scope.events[key][k2].concat(v2);
-            } else {
-              $scope.events[key][k2] = v2;
-            }
-          });
-        } else {
-          $scope.events[key] = value;
-        }
+        time = moment(value.created_at, moment.ISO_8601);
+        time = time.format('YYYY-MM-DD|HH:ss').split('|');
+        d = time[0];
+        t = time[1];
+        if(!$scope.events[d]){ $scope.events[d] = {}; };
+        if(!$scope.events[d][t]) { $scope.events[d][t] = []; }
+        $scope.events[d][t].push(value);
       });
       $scope.onload = false;
     })
@@ -168,7 +157,7 @@ app.controller('EventsCtrl', ['$scope', '$http', '$sce', function($scope, $http,
       alert(data);
       console.log(data);
     });
-    console.log(to, from);
+    //console.log(to, from);
   }, true);
 
 }]);

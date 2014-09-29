@@ -1,0 +1,8 @@
+<h6 class="media-heading">
+  <span class="glyphicon glyphicon-trash"></span>&nbsp;
+  <%=link_to event.source.name, user_path(event.source)%>
+  <span>
+    销毁了任务：<%= event.target_snap[:content]%>
+  </span>
+</h6>
+<p></p>

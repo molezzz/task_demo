@@ -9,56 +9,39 @@ class EventsController < ApplicationController
   def index
     user = current_user
 
-    # note 这里实现的是获取用户有权访问的项目
-    #      也可以实现成按Team查看
-    @projects = Hash[user.projects.select(:id, :key, :title).map { |pj| [pj.id, pj] }]
-
     respond_to do |format|
       format.html do
-        @team_members = user.team_brothers.select(:key,:name,:team_id)
+        @team_members = user ? user.team_brothers.select(:key,:name,:team_id) : []
       end
 
       format.json do
         now = Time.zone.now
         today_range = now.beginning_of_day..now.end_of_day
         yesterday_range = (now - 1.day).beginning_of_day..(now - 1.day).end_of_day
-        member = User.where(key: params[:member]).first if params[:member]
+        if params[:member]
+          members = User.select(:id).where(key: params[:member])
+        else
+          #查看同一Team的人的动态
+          members = user.team_brothers.select(:id)
+        end
         #todo 检查是否有权查看另外用户的动态
 
 
         #进行两次查找，首先找是否有今天和昨天的，如果没有，则显示更早的
-        chain = Event.select('events.*','todos.project_id')
-                     .joins(:todo)
-                     .where(todos: { project_id: @projects.keys})
+        chain = Event.where(source_id: members.collect{|m| m.id})
+                     .includes(eventable: :project)
                      .order(created_at: :desc)
-        #按成员筛选
-        chain = chain.where(source_id: member.id) if member
 
-        events = chain.where(created_at: yesterday_range.first..today_range.last)
-        events = chain if events.empty?
+        @events = chain.where(created_at: yesterday_range.first..today_range.last)
+        @events = chain if @events.empty?
 
-        #对事件进行分组
-        events_with_group = {}
-        events.includes(:source)
-              .paginate(page: params[:page], per_page: 50).collect do |event|
-                day , time = event.created_at.strftime('%Y-%m-%d|%H:%M').split('|')
-                events_with_group[day] ||= {}
-                events_with_group[day][time] ||= []
-                events_with_group[day][time] << {
-                  id: event.id,
-                  kind: event.kind,
-                  user: {
-                    name: event.source.try(:name),
-                    key: event.source.try(:key)
-                  },
-                  title: event.title,
-                  content: event.content,
-                  created_at: event.created_at,
-                  project_id: event.project_id
-                }
-              end
 
-        render json: events_with_group
+        @events = @events.includes(:source)
+                         .paginate(page: params[:page], per_page: 50)
+
+        @cache_key = ['v1', user.cache_key, params[:page]]
+
+        render :index
       end
 
     end

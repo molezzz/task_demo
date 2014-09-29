@@ -26,7 +26,7 @@ class Todo < ActiveRecord::Base
             { name: :reopen, filter: ->(to, from){ to == nil }} #重新打开任务
           ],
           end_at: { name: :change_end }, #修改任务结束时间
-          owner_id: [ 
+          owner_id: [
             { name: :dispatch, filter: ->(to, from){ from == nil} }, #派发任务
             { name: :redispatch, filter: ->(to, from){ from != nil && to != nil } }, #重新派发任务
             { name: :revoke, filter: ->(to, from){ to == nil} } #取消任务派发

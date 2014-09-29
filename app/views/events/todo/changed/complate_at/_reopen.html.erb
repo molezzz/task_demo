@@ -1,0 +1,6 @@
+<h6 class="media-heading">
+  <span class="glyphicon glyphicon-repeat"></span>&nbsp;
+  <%=link_to event.source.name, user_path(event.source)%>
+  <span>重新打开了任务：<%=link_to event.eventable.content, todo_path(event.eventable)%> </span>
+</h6>
+<p></p>

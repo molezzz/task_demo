@@ -1,0 +1,6 @@
+<h6 class="media-heading">
+  <span class="glyphicon glyphicon-folder-open"></span>&nbsp;
+  <%=link_to event.source.name, user_path(event.source)%>
+  <span>把下面的这条任务的完成时间从<%=event.from%>改成了<%=event.to%></span>
+</h6>
+<p><%=link_to event.eventable.content, todo_path(event.eventable)%> </p>
